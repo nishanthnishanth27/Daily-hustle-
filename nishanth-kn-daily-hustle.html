@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NISHANTH KN - Daily Hustle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Arial', 'Helvetica Neue', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Background */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #000a1a 0%, #0a0f2c 25%, #1a0a3e 50%, #0a0f2c 75%, #000a1a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease-out;
+            opacity: 1;
+            overflow: hidden;
+        }
+
+        .splash-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 15% 30%, rgba(147, 112, 219, 0.25) 0%, transparent 50%),
+                radial-gradient(circle at 85% 70%, rgba(236, 72, 153, 0.25) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #threejs-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .splash-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 0;
+        }
+
+        /* Large Letter Container */
+        .letter-container {
+            position: relative;
+            width: 100%;
+            height: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .massive-letters {
+            font-size: 12vw;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            text-align: center;
+            line-height: 1;
+            background: linear-gradient(135deg, #9370db 0%, #bd3ff5 25%, #ec4899 50%, #f97316 75%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 200% 200%;
+            animation: gradientAnimation 6s ease infinite;
+            filter: drop-shadow(0 0 30px rgba(147, 112, 219, 0.6)) 
+                    drop-shadow(0 0 60px rgba(236, 72, 153, 0.4))
+                    drop-shadow(0 0 90px rgba(249, 115, 22, 0.2));
+            text-shadow: 
+                0 0 20px rgba(147, 112, 219, 0.5),
+                0 0 40px rgba(236, 72, 153, 0.3),
+                0 0 60px rgba(249, 115, 22, 0.2);
+            transform-origin: center;
+            animation: letterBounce 2s ease-in-out infinite, gradientAnimation 6s ease infinite;
+        }
+
+        @keyframes letterBounce {
+            0%, 100% {
+                transform: translateY(0) scaleY(1);
+            }
+            50% {
+                transform: translateY(-20px) scaleY(1.05);
+            }
+        }
+
+        @keyframes gradientAnimation {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        /* Subtitle */
+        .subtitle-container {
+            position: relative;
+            z-index: 10;
+            margin-top: 30px;
+            animation: fadeInUp 1.2s ease forwards;
+            opacity: 0;
+            animation-delay: 0.5s;
+        }
+
+        .subtitle {
+            font-size: 2.5vw;
+            color: #cbd5e1;
+            letter-spacing: 3px;
+            font-weight: 300;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(147, 112, 219, 0.4);
+        }
+
+        .subtitle-emoji {
+            font-size: 1.2em;
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        /* Bottom Section */
+        .bottom-section {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            z-index: 10;
+        }
+
+        /* Status */
+        .status-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            animation: fadeInUp 1.2s ease forwards;
+            opacity: 0;
+            animation-delay: 1s;
+        }
+
+        .status-line {
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #9370db, #ec4899, transparent);
+            border-radius: 2px;
+            animation: expandLine 1.5s ease forwards;
+        }
+
+        @keyframes expandLine {
+            from {
+                width: 0;
+            }
+            to {
+                width: 100px;
+            }
+        }
+
+        .status-text {
+            font-size: 1.1em;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: fadeInUp 1.2s ease forwards;
+            opacity: 0;
+            animation-delay: 1.2s;
+        }
+
+        .dev-name-bottom {
+            font-size: 1.8em;
+            font-weight: 900;
+            background: linear-gradient(135deg, #9370db, #ec4899, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+            animation: scaleInDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            animation-delay: 1.4s;
+            filter: drop-shadow(0 0 15px rgba(147, 112, 219, 0.4));
+        }
+
+        @keyframes scaleInDown {
+            from {
+                opacity: 0;
+                transform: scale(0.3) translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Loading Bar */
+        .loading-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            animation: fadeInUp 1.2s ease forwards;
+            opacity: 0;
+            animation-delay: 1.6s;
+        }
+
+        .loading-bar-container {
+            width: 280px;
+            height: 6px;
+            background: rgba(147, 112, 219, 0.15);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid rgba(147, 112, 219, 0.3);
+            box-shadow: 0 0 20px rgba(147, 112, 219, 0.2),
+                        inset 0 0 20px rgba(147, 112, 219, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9370db, #ec4899, #f97316, #ec4899, #9370db);
+            background-size: 200% 100%;
+            width: 0%;
+            animation: loadingFill 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards,
+                       gradientShift 2s ease infinite;
+            box-shadow: 0 0 15px rgba(147, 112, 219, 0.8);
+        }
+
+        @keyframes loadingFill {
+            0% { width: 0%; }
+            80% { width: 80%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .loading-text {
+            font-size: 1em;
+            color: #cbd5e1;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9370db, #ec4899);
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+            50% { transform: translateY(-8px) scale(1.2); opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Particle stars */
+        .stars-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(147, 112, 219, 0.6);
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Glow orbs */
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            animation: floatOrb 8s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            background: radial-gradient(circle, rgba(147, 112, 219, 0.6) 0%, transparent 70%);
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 250px;
+            height: 250px;
+            top: 60%;
+            right: 10%;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.5) 0%, transparent 70%);
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            bottom: 20%;
+            left: 50%;
+            background: radial-gradient(circle, rgba(249, 115, 22, 0.4) 0%, transparent 70%);
+            animation-delay: 4s;
+            transform: translateX(-50%);
+        }
+
+        @keyframes floatOrb {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-30px) translateX(20px); }
+            50% { transform: translateY(30px) translateX(-20px); }
+            75% { transform: translateY(-20px) translateX(30px); }
+        }
+
+        /* Main App */
+        .app-wrapper {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .app-wrapper.show {
+            display: flex;
+            animation: fadeInApp 0.8s ease forwards;
+        }
+
+        @keyframes fadeInApp {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        :root {
+            --primary: #9370db;
+            --secondary: #ec4899;
+            --accent: #f97316;
+            --success: #22c55e;
+            --bg-dark: #0f172a;
+            --bg-darker: #050e1e;
+            --card-bg: rgba(139, 92, 246, 0.08);
+            --border: rgba(168, 85, 247, 0.25);
+        }
+
+        .app-container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            background: var(--bg-darker);
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.9) 100%);
+            border-right: 1px solid var(--border);
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 20px rgba(147, 112, 219, 0.4);
+        }
+
+        .logo-text {
+            font-size: 1.3em;
+            font-weight: 900;
+            color: white;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            padding: 14px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #cbd5e1;
+        }
+
+        .nav-item:hover {
+            background: var(--card-bg);
+            border-color: var(--border);
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(147, 112, 219, 0.4);
+        }
+
+        .user-info {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .user-info-name {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .user-info-date {
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            background: linear-gradient(90deg, rgba(147, 112, 219, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .page-title {
+            font-size: 2em;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .stats-mini {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-mini {
+            background: rgba(30, 27, 75, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .stat-mini:hover {
+            background: rgba(30, 27, 75, 0.8);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .stat-mini-label {
+            font-size: 0.8em;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stat-mini-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .activities-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            background: rgba(30, 27, 75, 0.5);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background: rgba(30, 27, 75, 0.8);
+            transform: translateX(5px);
+        }
+
+        .activity-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        .activity-info {
+            flex: 1;
+        }
+
+        .activity-name {
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+        }
+
+        .activity-meta {
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+
+        .activity-delete {
+            background: rgba(239, 68, 68, 0.1);
+            border: none;
+            color: #fca5a5;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .activity-delete:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .add-form {
+            background: rgba(30, 27, 75, 0.5);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .add-form input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .add-form input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(147, 112, 219, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+        }
+
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .massive-letters {
+                font-size: 8vw;
+            }
+            .subtitle {
+                font-size: 1.5vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="stars-bg" id="starsContainer"></div>
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+        <div id="threejs-container"></div>
+
+        <div class="splash-content">
+            <div class="letter-container">
+                <div class="massive-letters">NISHANTH KN</div>
+            </div>
+
+            <div class="subtitle-container">
+                <div class="subtitle">
+                    <span class="subtitle-emoji">📊</span>
+                    Daily Hustle
+                    <span class="subtitle-emoji">📊</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="status-info">
+                <div class="status-line"></div>
+                <div class="status-text">Your Coding Companion</div>
+                <div class="dev-name-bottom">👨‍💻 Developer Edition</div>
+            </div>
+
+            <div class="loading-section">
+                <div class="loading-bar-container">
+                    <div class="loading-bar-fill"></div>
+                </div>
+                <div class="loading-text">
+                    Loading
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-wrapper" id="appWrapper">
+        <div class="app-container">
+            <div class="sidebar">
+                <div class="logo">
+                    <span>📊</span>
+                    <div class="logo-text">Hustle</div>
+                </div>
+
+                <div class="nav-menu">
+                    <div class="nav-item active" onclick="switchTab('today')">
+                        📋 Today
+                    </div>
+                    <div class="nav-item" onclick="switchTab('analytics')">
+                        📈 Analytics
+                    </div>
+                    <div class="nav-item" onclick="switchTab('history')">
+                        📅 History
+                    </div>
+                </div>
+
+                <div class="user-info">
+                    <div class="user-info-name">👤 NISHANTH KN</div>
+                    <div class="user-info-date" id="currentDate"></div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="top-bar">
+                    <div class="page-title" id="pageTitle">Daily Hustle</div>
+                </div>
+
+                <div class="content-area" id="contentArea">
+                    <div id="todayTab" class="tab-content">
+                        <div class="section">
+                            <div class="section-title">📊 Today's Progress</div>
+                            <div class="stats-mini">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Progress</div>
+                                    <div class="stat-mini-value" id="todayProgress">0%</div>
+                                </div>
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Time</div>
+                                    <div class="stat-mini-value" id="todayTime">0h</div>
+                                </div>
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Cost</div>
+                                    <div class="stat-mini-value" id="todayCost">₹0</div>
+                                </div>
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Done</div>
+                                    <div class="stat-mini-value" id="todayDone">0/0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">➕ Add Activity</div>
+                            <div class="add-form">
+                                <input type="text" id="activityName" placeholder="Activity name" onkeypress="handleKeyPress(event)">
+                                <div class="input-row">
+                                    <input type="number" id="activityTime" placeholder="Hours" value="1" min="0.5" step="0.5">
+                                    <input type="number" id="activityCost" placeholder="Cost (₹)" value="0" min="0">
+                                </div>
+                                <button class="add-btn" onclick="addActivity()">✨ Add Activity</button>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">📋 Today's Activities</div>
+                            <div class="activities-list" id="activitiesList"></div>
+                        </div>
+                    </div>
+
+                    <div id="analyticsTab" class="tab-content" style="display: none;">
+                        <div class="section" style="grid-column: 1 / -1;">
+                            <div class="section-title">📈 Hours Tracked (Last 7 Days)</div>
+                            <div class="chart-container">
+                                <canvas id="hoursChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="section" style="grid-column: 1 / -1;">
+                            <div class="section-title">💰 Expenses Tracked (Last 7 Days)</div>
+                            <div class="chart-container">
+                                <canvas id="expenseChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">🎯 Activity Breakdown</div>
+                            <div class="chart-container">
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">📊 Weekly Stats</div>
+                            <div class="stats-mini">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Total Hours</div>
+                                    <div class="stat-mini-value" id="weeklyHours">0h</div>
+                                </div>
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Total Cost</div>
+                                    <div class="stat-mini-value" id="weeklyCost">₹0</div>
+                                </div>
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Avg/Day</div>
+                                    <div class="stat-mini-value" id="avgDay">0h</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="historyTab" class="tab-content" style="display: none;">
+                        <div class="section" style="grid-column: 1 / -1;">
+                            <div class="section-title">📅 Select Date</div>
+                            <input type="date" id="dateInput" style="background: rgba(30, 27, 75, 0.6); border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; color: #e2e8f0; cursor: pointer; width: 100%; max-width: 200px;" onchange="loadHistoryData(this.value)">
+                        </div>
+
+                        <div class="section" style="grid-column: 1 / -1;">
+                            <div class="section-title" id="historyTitle">History</div>
+                            <div class="activities-list" id="historyList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator">✓ Saved automatically</div>
+
+    <script>
+        // Create stars
+        function createStars() {
+            const container = document.getElementById('starsContainer');
+            for (let i = 0; i < 80; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
+        // Three.js 3D Setup
+        function initThreeJS() {
+            const container = document.getElementById('threejs-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+
+            camera.position.z = 8;
+
+            // Create particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particleCount = 200;
+            const posArray = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                posArray[i] = (Math.random() - 0.5) * 20;
+                posArray[i + 1] = (Math.random() - 0.5) * 20;
+                posArray[i + 2] = (Math.random() - 0.5) * 20;
+
+                const gradient = Math.random();
+                if (gradient < 0.33) {
+                    colors[i] = 0.58;
+                    colors[i + 1] = 0.44;
+                    colors[i + 2] = 0.86;
+                } else if (gradient < 0.66) {
+                    colors[i] = 0.93;
+                    colors[i + 1] = 0.28;
+                    colors[i + 2] = 0.60;
+                } else {
+                    colors[i] = 0.98;
+                    colors[i + 1] = 0.45;
+                    colors[i + 2] = 0.09;
+                }
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.12,
+                sizeAttenuation: true,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+
+            // Create shapes
+            const cubeGeometry = new THREE.BoxGeometry(2.5, 2.5, 2.5);
+            const cubeMaterial = new THREE.MeshPhongMaterial({
+                color: 0x9370db,
+                emissive: 0xec4899,
+                emissiveIntensity: 0.3,
+                shininess: 100,
+                transparent: true,
+                opacity: 0.8
+            });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            scene.add(cube);
+
+            const octaGeometry = new THREE.OctahedronGeometry(2, 0);
+            const octaMaterial = new THREE.MeshPhongMaterial({
+                color: 0xec4899,
+                emissive: 0x9370db,
+                emissiveIntensity: 0.25,
+                shininess: 100,
+                transparent: true,
+                opacity: 0.7
+            });
+            const octa = new THREE.Mesh(octaGeometry, octaMaterial);
+            scene.add(octa);
+
+            const torusGeometry = new THREE.TorusGeometry(3, 0.4, 16, 100);
+            const torusMaterial = new THREE.MeshPhongMaterial({
+                color: 0xf97316,
+                emissive: 0x9370db,
+                emissiveIntensity: 0.2,
+                transparent: true,
+                opacity: 0.6
+            });
+            const torus = new THREE.Mesh(torusGeometry, torusMaterial);
+            scene.add(torus);
+
+            // Lighting
+            const light1 = new THREE.PointLight(0x9370db, 2.5);
+            light1.position.set(5, 5, 5);
+            scene.add(light1);
+
+            const light2 = new THREE.PointLight(0xec4899, 2);
+            light2.position.set(-5, -5, 5);
+            scene.add(light2);
+
+            const light3 = new THREE.PointLight(0xf97316, 1.5);
+            light3.position.set(0, 5, -5);
+            scene.add(light3);
+
+            const ambientLight = new THREE.AmbientLight(0x404040, 1.2);
+            scene.add(ambientLight);
+
+            // Animation
+            let time = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.006;
+
+                cube.rotation.x += 0.007;
+                cube.rotation.y += 0.011;
+                cube.position.x = Math.sin(time) * 0.8;
+                cube.position.y = Math.cos(time * 0.7) * 0.8;
+
+                octa.rotation.x -= 0.005;
+                octa.rotation.z += 0.009;
+                octa.position.x = -Math.sin(time * 0.8) * 0.8;
+
+                torus.rotation.x += 0.003;
+                torus.rotation.y += 0.005;
+                torus.position.z = Math.cos(time * 0.6) * 0.5;
+
+                particles.rotation.x += 0.0001;
+                particles.rotation.y += 0.0002;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(newWidth, newHeight);
+            });
+        }
+
+        initThreeJS();
+
+        // Hide splash and show app
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            splash.classList.add('hidden');
+            setTimeout(() => {
+                splash.style.display = 'none';
+                document.getElementById('appWrapper').classList.add('show');
+                init();
+            }, 800);
+        }, 4200);
+
+        // ============= APP LOGIC =============
+
+        const STORAGE_KEY = 'nishanth_daily_activities_v3';
+        const TODAY = new Date().toDateString();
+
+        let allActivities = [];
+        let charts = {};
+
+        function init() {
+            updateCurrentDate();
+            loadAllActivities();
+            renderTodayTab();
+            attachEventListeners();
+        }
+
+        function updateCurrentDate() {
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', options);
+        }
+
+        function loadAllActivities() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                allActivities = saved ? JSON.parse(saved) : getDefaultActivities();
+            } catch (e) {
+                allActivities = getDefaultActivities();
+            }
+        }
+
+        function getDefaultActivities() {
+            return [
+                { id: 1, name: 'LeetCode', time: 1.5, cost: 0, completed: false, date: TODAY },
+                { id: 2, name: 'LinkedIn', time: 0.5, cost: 0, completed: false, date: TODAY },
+                { id: 3, name: 'HackerRank', time: 1, cost: 0, completed: false, date: TODAY },
+                { id: 4, name: 'CodeChef', time: 1, cost: 0, completed: false, date: TODAY },
+                { id: 5, name: 'GitHub', time: 1, cost: 0, completed: false, date: TODAY }
+            ];
+        }
+
+        function saveActivities() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allActivities));
+                const indicator = document.getElementById('saveIndicator');
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 2000);
+            } catch (e) {
+                console.error('Save error:', e);
+            }
+        }
+
+        function getActivitiesForDate(date) {
+            return allActivities.filter(a => a.date === date);
+        }
+
+        function addActivity() {
+            const name = document.getElementById('activityName').value.trim();
+            const time = parseFloat(document.getElementById('activityTime').value) || 1;
+            const cost = parseFloat(document.getElementById('activityCost').value) || 0;
+
+            if (!name) {
+                alert('Please enter activity name');
+                return;
+            }
+
+            allActivities.push({
+                id: Date.now(),
+                name: name,
+                time: time,
+                cost: cost,
+                completed: false,
+                date: TODAY
+            });
+
+            saveActivities();
+            document.getElementById('activityName').value = '';
+            document.getElementById('activityTime').value = '1';
+            document.getElementById('activityCost').value = '0';
+            document.getElementById('activityName').focus();
+            renderTodayTab();
+        }
+
+        function toggleComplete(id) {
+            const activity = allActivities.find(a => a.id === id);
+            if (activity) {
+                activity.completed = !activity.completed;
+                saveActivities();
+                renderTodayTab();
+            }
+        }
+
+        function deleteActivity(id) {
+            if (confirm('Delete this activity?')) {
+                allActivities = allActivities.filter(a => a.id !== id);
+                saveActivities();
+                renderTodayTab();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addActivity();
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+
+            if (tab === 'today') {
+                document.getElementById('pageTitle').textContent = '📋 Daily Hustle';
+                document.getElementById('todayTab').style.display = 'grid';
+                renderTodayTab();
+            } else if (tab === 'analytics') {
+                document.getElementById('pageTitle').textContent = '📈 Analytics';
+                document.getElementById('analyticsTab').style.display = 'grid';
+                setTimeout(() => renderAnalyticsTab(), 100);
+            } else if (tab === 'history') {
+                document.getElementById('pageTitle').textContent = '📅 History';
+                document.getElementById('historyTab').style.display = 'grid';
+            }
+        }
+
+        function renderTodayTab() {
+            const todayActivities = getActivitiesForDate(TODAY);
+            const total = todayActivities.length;
+            const completed = todayActivities.filter(a => a.completed).length;
+            const totalTime = todayActivities.reduce((sum, a) => sum + a.time, 0);
+            const totalCost = todayActivities.reduce((sum, a) => sum + a.cost, 0);
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('todayProgress').textContent = percentage + '%';
+            document.getElementById('todayTime').textContent = totalTime.toFixed(1) + 'h';
+            document.getElementById('todayCost').textContent = '₹' + totalCost.toFixed(0);
+            document.getElementById('todayDone').textContent = completed + '/' + total;
+
+            const list = document.getElementById('activitiesList');
+            if (todayActivities.length === 0) {
+                list.innerHTML = '<div class="empty-state"><p>🎯 No activities yet. Add one to get started!</p></div>';
+            } else {
+                list.innerHTML = todayActivities.map(a => `
+                    <div class="activity-item ${a.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="activity-checkbox" ${a.completed ? 'checked' : ''} onchange="toggleComplete(${a.id})">
+                        <div class="activity-info">
+                            <div class="activity-name">${a.name}</div>
+                            <div class="activity-meta">⏱️ ${a.time}h ${a.cost > 0 ? '| 💰 ₹' + a.cost : ''}</div>
+                        </div>
+                        <button class="activity-delete" onclick="deleteActivity(${a.id})">🗑️</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderAnalyticsTab() {
+            const last7Days = getLast7Days();
+            const data7Days = last7Days.map(date => {
+                const activities = getActivitiesForDate(date);
+                return {
+                    date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    hours: activities.reduce((sum, a) => sum + a.time, 0),
+                    cost: activities.reduce((sum, a) => sum + a.cost, 0)
+                };
+            });
+
+            const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+            if (charts.hoursChart) charts.hoursChart.destroy();
+            charts.hoursChart = new Chart(hoursCtx, {
+                type: 'line',
+                data: {
+                    labels: data7Days.map(d => d.date),
+                    datasets: [{
+                        label: 'Hours',
+                        data: data7Days.map(d => d.hours),
+                        borderColor: '#9370db',
+                        backgroundColor: 'rgba(147, 112, 219, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ec4899',
+                        pointBorderColor: '#9370db',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(147, 112, 219, 0.1)' }, ticks: { color: '#cbd5e1' } },
+                        x: { grid: { color: 'rgba(147, 112, 219, 0.1)' }, ticks: { color: '#cbd5e1' } }
+                    }
+                }
+            });
+
+            const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+            if (charts.expenseChart) charts.expenseChart.destroy();
+            charts.expenseChart = new Chart(expenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: data7Days.map(d => d.date),
+                    datasets: [{
+                        label: 'Expenses (₹)',
+                        data: data7Days.map(d => d.cost),
+                        backgroundColor: '#ec4899',
+                        borderColor: '#f97316',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(147, 112, 219, 0.1)' }, ticks: { color: '#cbd5e1' } },
+                        x: { grid: { color: 'rgba(147, 112, 219, 0.1)' }, ticks: { color: '#cbd5e1' } }
+                    }
+                }
+            });
+
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            if (charts.activityChart) charts.activityChart.destroy();
+            
+            const activityCount = {};
+            allActivities.forEach(a => {
+                activityCount[a.name] = (activityCount[a.name] || 0) + 1;
+            });
+
+            charts.activityChart = new Chart(activityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(activityCount),
+                    datasets: [{
+                        data: Object.values(activityCount),
+                        backgroundColor: ['#9370db', '#ec4899', '#f97316', '#22c55e', '#06b6d4'],
+                        borderColor: 'rgba(15, 23, 42, 0.9)',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } }
+                }
+            });
+
+            const totalHours = data7Days.reduce((sum, d) => sum + d.hours, 0);
+            const totalCost = data7Days.reduce((sum, d) => sum + d.cost, 0);
+            document.getElementById('weeklyHours').textContent = totalHours.toFixed(1) + 'h';
+            document.getElementById('weeklyCost').textContent = '₹' + totalCost.toFixed(0);
+            document.getElementById('avgDay').textContent = (totalHours / 7).toFixed(1) + 'h';
+        }
+
+        function loadHistoryData(dateStr) {
+            const activities = getActivitiesForDate(new Date(dateStr).toDateString());
+            const historyTitle = document.getElementById('historyTitle');
+            historyTitle.textContent = '📅 ' + new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+            const list = document.getElementById('historyList');
+            if (activities.length === 0) {
+                list.innerHTML = '<div class="empty-state"><p>No activities for this date</p></div>';
+            } else {
+                list.innerHTML = activities.map(a => `
+                    <div class="activity-item ${a.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="activity-checkbox" ${a.completed ? 'checked' : ''} disabled>
+                        <div class="activity-info">
+                            <div class="activity-name">${a.name}</div>
+                            <div class="activity-meta">⏱️ ${a.time}h ${a.cost > 0 ? '| 💰 ₹' + a.cost : ''}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getLast7Days() {
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                days.push(date.toDateString());
+            }
+            return days;
+        }
+
+        function attachEventListeners() {
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    switchTab(['today', 'analytics', 'history'][index]);
+                });
+            });
+        }
+
+        setInterval(saveActivities, 5000);
+    </script>
+</body>
+</html>
